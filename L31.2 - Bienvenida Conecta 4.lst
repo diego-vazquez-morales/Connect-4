@@ -1,0 +1,286 @@
+# file opened: C:\Users\diego\Documents\asignaturas\AOC\Conecta4\L31.2 - Bienvenida Conecta 4.asm
+  1   0000                  ; Pregunta si se desea comenzar a jugar al Conecta 4
+  2   0000                  DEVICE ZXSPECTRUM48
+  3   0000                  ORG $8000
+  4   8000 31 00 00         LD SP, 0
+  5   8003
+  6   8003 3E 00            LD A, 0
+  7   8005 D3 FE            OUT ($FE),A     ; Poner el borde de la pantalla negro
+  8   8007 CD 57 81         CALL CLEARSCR   ; Borrar pantalla
+  9   800A
+ 10   800A 3E 82            LD A,2+$80      ; Letra roja, fondo negro, parpadeante
+ 11   800C 06 01            LD B,1          ; Coordenadas para pintar el título
+ 12   800E 0E 04            LD C,4
+ 13   8010 DD 21 9D 80      LD IX,Titulo    ; Dirección del título
+ 14   8014 CD E6 80         CALL PRINTAT    ; Imprime el título
+ 15   8017
+ 16   8017 3E 01            LD A,1          ; Letra azul, fondo negro
+ 17   8019 06 0A            LD B,10         ; Coordenadas para pintar el mensaje
+ 18   801B 0E 01            LD C,1
+ 19   801D DD 21 B5 80      LD IX,Mensaje   ; Dirección del mensaje
+ 20   8021 CD E6 80         CALL PRINTAT    ; Imprime el mensaje
+ 21   8024
+ 22   8024 06 0A            LD B,10         ; Buscamos la dirección del atributo de coordenadas 10,30
+ 23   8026 0E 1E            LD C,30         ; Para poner el cursor
+ 24   8028 CD 5A 80         CALL Coor_Atrib ; Esta rutina devuelve en HL la dirección del atributo
+ 25   802B 3E 81            LD A,1+$80      ; Azul parpadeante
+ 26   802D 77               LD (HL),A       ; Pongo el atributo
+ 27   802E
+ 28   802E CD 77 80         CALL Teclado    ; Leo el teclado hasta que pulsen S o N
+ 29   8031
+ 30   8031 3E 01            LD A,1          ; Eco de la tecla pulsada
+ 31   8033 06 0A            LD B,10
+ 32   8035 0E 1E            LD C,30
+ 33   8037 DD 21 E4 80      LD IX,Caracter
+ 34   803B CD E6 80         CALL PRINTAT
+ 35   803E
+ 36   803E 3E 07            LD A,7          ; Letra azul, fondo negro
+ 37   8040 06 12            LD B,18         ; Coordenadas para pintar el mensaje
+ 38   8042 0E 01            LD C,1
+ 39   8044 DD 21 D3 80      LD IX,Respuesta   ; Dirección del mensaje
+ 40   8048 CD E6 80         CALL PRINTAT    ; Imprime el mensaje
+ 41   804B 3E 04            LD A,4
+ 42   804D 06 12            LD B,18
+ 43   804F 0E 11            LD C,17
+ 44   8051 DD 21 E4 80      LD IX,Caracter
+ 45   8055 CD E6 80         CALL PRINTAT
+ 46   8058
+ 47   8058 18 FE        fin:    JR fin
+ 48   805A
+ 49   805A              Coor_Atrib:
+ 50   805A                                      ; Rutina que recibe en B,C las coordenadas de la pantalla (fila, columna)
+ 51   805A                                      ; y devuelve en HL la dirección del atributo correspondiente
+ 52   805A F5               PUSH AF             ; Guardamos A en el stack
+ 53   805B C5               PUSH BC             ; Guardamos BC en el stack
+ 54   805C 60               LD H,b              ; Los bits 4,5 de B deben ser los bits 0,1 de H
+ 55   805D CB 3C            SRL H
+ 55   805F CB 3C          SRL H
+ 55   8061 CB 3C          SRL H
+ 56   8063 78               LD A,B              ; Los bits 0,1,2 de B deben ser los bits 5,6,7 de L
+ 57   8064 CB 27            SLA A
+ 57   8066 CB 27          SLA A
+ 57   8068 CB 27          SLA A
+ 57   806A CB 27          SLA A
+ 57   806C CB 27          SLA a
+ 58   806E B1               OR c                ; Y C son los bits 0-4 de L
+ 59   806F 6F               LD L,A
+ 60   8070 01 00 58         LD BC, $5800        ; Le sumamos la dirección de comienzo de los atributos
+ 61   8073 09               ADD HL,BC
+ 62   8074 C1               POP BC              ; Restauramos los valores del stack
+ 63   8075 F1               POP AF
+ 64   8076 C9               RET
+ 65   8077
+ 66   8077              Teclado:                ; Rutina para leer del teclado 'S' o 'N'
+ 67   8077 C5               PUSH BC             ; BC al stack para preservar su valor
+ 68   8078              T_N:
+ 69   8078 01 FE 7F         LD BC,$7FFE         ; Escanear línea B,N,M,SYMB,Space
+ 70   807B ED 78            IN A,(C)
+ 71   807D CB 5F            BIT 3,A
+ 72   807F 20 04            JR NZ,T_S           ; Han pulsado N
+ 73   8081 3E 4E            LD A,'N'
+ 74   8083 18 0B            JR T_F
+ 75   8085              T_S:
+ 76   8085 01 FE FD         LD BC,$FDFE         ; Escanear línea G,F,D,S,A
+ 77   8088 ED 78            IN A,(C)
+ 78   808A CB 4F            BIT 1,A
+ 79   808C 20 EA            JR NZ,T_N           ; No han pulsado 'S'
+ 80   808E 3E 53            LD A,'S'
+ 81   8090              T_F:
+ 82   8090 32 E4 80         LD (Caracter),A     ; Guardo 'S' o 'N' en la Variable Caracter
+ 83   8093              Soltar_Tecla:           ; Rutina de espera hasta que se suelta la tecla
+ 84   8093 ED 78            IN A,(C)            ; Leer del puerto que se ha definido en Lee_Tecla
+ 85   8095 E6 1F            AND $1F
+ 86   8097 FE 1F            CP $1F              ; Comprobar que no hay tecla pulsada
+ 87   8099 20 F8            JR NZ,Soltar_Tecla  ; esperar hasta que no haya tecla pulsada
+ 88   809B C1               POP BC              ; Recuperamos el valor de BC
+ 89   809C C9               RET
+ 90   809D
+ 91   809D 42 69 65 6E  Titulo:    db "Bienvenido al Conecta 4",0    ; Título
+ 91   80A1 76 65 6E 69
+ 91   80A5 64 6F 20 61
+ 91   80A9 6C 20 43 6F
+ 91   80AD 6E 65 63 74
+ 91   80B1 61 20 34 00
+ 92   80B5 45 6D 70 65  Mensaje:   db "Empezamos una partida (S/N)? ",0   ; Mensaje inicial
+ 92   80B9 7A 61 6D 6F
+ 92   80BD 73 20 75 6E
+ 92   80C1 61 20 70 61
+ 92   80C5 72 74 69 64
+ 92   80C9 61 20 28 53
+ 92   80CD 2F 4E 29 3F
+ 92   80D1 20 00
+ 93   80D3 48 61 73 20  Respuesta: db "Has contestado: ",0      ; Mensaje con la respuesta
+ 93   80D7 63 6F 6E 74
+ 93   80DB 65 73 74 61
+ 93   80DF 64 6F 3A 20
+ 93   80E3 00
+ 94   80E4 00 00        Caracter:   db 0,0              ; Mensaje del carácter para imprimir
+ 95   80E6
+ 96   80E6                  INCLUDE printat.asm         ; Incluir el código de PRINTAT
+# file opened: C:\Users\diego\Documents\asignaturas\AOC\Conecta4\printat.asm
+  1+  80E6              ; -------------------------------
+  2+  80E6              ; ZX Spectrum Text print library
+  3+  80E6              ; Daniel León - AOC - UFV 2020
+  4+  80E6              ; -------------------------------
+  5+  80E6
+  6+  80E6
+  7+  80E6              ; ----------------------------------------------------------------------------------------
+  8+  80E6              ; PRINTAT - Print a string in a position and attributes as per registers:
+  9+  80E6              ;		IN	A	: Bit 7=1 For Flash / Bit 6=1 For Brigh / Bit 5,4,3 for Paper / Bit 2,1,0 for Ink
+ 10+  80E6              ;		IN	B	: Row 0..23
+ 11+  80E6              ;		IN	C	: Column 0..31
+ 12+  80E6              ;		IN	IX	: Address of text (Text must end in a 0)
+ 13+  80E6              ; ----------------------------------------------------------------------------------------
+ 14+  80E6 CD F5 80     PRINTAT:	CALL PREP_PRT				; Update Attribute var &Screen & Attributes pointers
+ 15+  80E9              ; ----------------------------------------------------------------------------------------
+ 16+  80E9              ;		VVV Do not move PRINTSTR below as PRINTAT continues into PRINTSTR routine
+ 17+  80E9              ; ----------------------------------------------------------------------------------------
+ 18+  80E9              ; PRINTSTR - Prints String - IX Points to the String start
+ 19+  80E9              ; ----------------------------------------------------------------------------------------
+ 20+  80E9 DD 7E 00     PRINTSTR:   LD A,(IX)					; A Contains first char to print
+ 21+  80EC B7           			OR A						; check for end of string (0)
+ 22+  80ED C8           			RET Z						; Finish printing if 0
+ 23+  80EE CD 23 81     			CALL PRINTCHNUM
+ 24+  80F1 DD 23        			INC IX						; Move to next char in string
+ 25+  80F3 18 F4        			JR PRINTSTR					; Start over printing sequence
+ 26+  80F5              ; ----------------------------------------------------------------------------------------
+ 27+  80F5
+ 28+  80F5
+ 29+  80F5              ;-----------------------------------------------------------------------------------------
+ 30+  80F5              ; PREP_PRT - Updates Print_Attr, SCR & ATTR Vars
+ 31+  80F5              ;-----------------------------------------------------------------------------------------
+ 32+  80F5 32 69 81     PREP_PRT:	LD (PRINT_ATTR),A			; Set Attribute
+ 33+  80F8 CD FE 80     PREP_PRT_2:	CALL CRtoSCREEN
+ 34+  80FB C3 10 81     			JP CRtoATTR
+ 35+  80FE              ;-----------------------------------------------------------------------------------------
+ 36+  80FE
+ 37+  80FE              ;-----------------------------------------------------------------------------------------
+ 38+  80FE              ; CRtoSCREEN - Converts a scr char coord into a SCREEN Address   b,c = y,x positions
+ 39+  80FE              ;	IN  - B=Row, C=Column
+ 40+  80FE              ;	OUT - HL=Address in screen also stored in (SCR_CUR_PTR)
+ 41+  80FE              ;	Conversion:
+ 42+  80FE              ;			Row FFfff   Column CCCCC
+ 43+  80FE              ;			HL=%010FF000 fffCCCCC
+ 44+  80FE              ;-----------------------------------------------------------------------------------------
+ 45+  80FE              CRtoSCREEN:
+ 46+  80FE 78           			LD A,B						; %___FFfff
+ 47+  80FF F6 40        			OR #40						; %010FFfff
+ 48+  8101 E6 F8        			AND #F8						; %010FF000
+ 49+  8103 67           			LD H,A
+ 50+  8104
+ 51+  8104 78           			LD A,B						; %___FFfff
+ 52+  8105 E6 07        			AND #7						; %00000fff
+ 53+  8107 0F           			RRCA						; %f00000ff
+ 54+  8108 0F           			RRCA						; %ff00000f
+ 55+  8109 0F           			RRCA						; %fff00000
+ 56+  810A B1           			OR C						; %fffCCCCC
+ 57+  810B 6F           			LD L,A
+ 58+  810C 22 65 81                 LD (SCR_CUR_PTR),HL			; Update Variable
+ 59+  810F C9                       RET
+ 60+  8110              ; ----------------------------------------------------------------------------------------
+ 61+  8110
+ 62+  8110
+ 63+  8110
+ 64+  8110              ;-----------------------------------------------------------------------------------------
+ 65+  8110              ; CRtoATTR - Converts a screen char coord  into a ATTR Address  b,c = y,x positions
+ 66+  8110              ;	IN  - B=Row, C=Column
+ 67+  8110              ;	OUT - HL=Address in screen also stored in (SCR_ATTR_PTR)
+ 68+  8110              ;	Conversion:
+ 69+  8110              ;			Row FFfff   Column CCCCC
+ 70+  8110              ;			HL=%010110FF fffCCCCC
+ 71+  8110              ;-----------------------------------------------------------------------------------------
+ 72+  8110              CRtoATTR:
+ 73+  8110 78           			LD A,B						; %___FFfff
+ 74+  8111 0F           			RRCA						; %f000FFff
+ 75+  8112 0F           			RRCA						; %ff000FFf
+ 76+  8113 0F           			RRCA						; %fff000FF
+ 77+  8114 6F           			LD L,A
+ 78+  8115 E6 03        			AND 3						; %000000FF	value of FF can be only 00,01,10
+ 79+  8117 F6 58        			OR #58						; %010110FF value will be #58, #59 or #5A
+ 80+  8119 67           			LD H,A
+ 81+  811A
+ 82+  811A 7D           			LD A,L						; %fff000FF
+ 83+  811B E6 E0        			AND #E0						; %fff00000
+ 84+  811D B1           			OR C						; %fffCCCCC
+ 85+  811E 6F           			LD L,A
+ 86+  811F
+ 87+  811F 22 67 81                 LD (SCR_ATTR_PTR),HL		; Update Variable
+ 88+  8122 C9                       RET
+ 89+  8123              ; ----------------------------------------------------------------------------------------
+ 90+  8123
+ 91+  8123
+ 92+  8123
+ 93+  8123              ; ----------------------------------------------------------------------------------------
+ 94+  8123              ; PRINTCHNUM - Prints Char Number N (stored in A)
+ 95+  8123              ;-----------------------------------------------------------------------------------------
+ 96+  8123              PRINTCHNUM:	;SUB 32						; Adjust Ascii to charset
+ 97+  8123 26 00        			LD H,0						; Multiply value by 8 to get to right Char in Charset
+ 98+  8125 6F           			LD L,A
+ 99+  8126 29           			ADD HL,HL
+100+  8127 29           			ADD HL,HL
+101+  8128 29           			ADD HL,HL
+102+  8129 11 6A 80     			LD DE, CHARSET-(8*32)		; Optimize in compile time (instead of sub 32)
+103+  812C 19           			ADD HL,DE
+104+  812D EB           			EX  DE,HL					;Value in DE
+105+  812E              			; Continues to printchar below
+106+  812E              ; ----------------------------------------------------------------------------------------
+107+  812E
+108+  812E
+109+  812E              ; ----------------------------------------------------------------------------------------
+110+  812E              ; PRINTCHAR - Prints Char  (DE points to the char. Uses HL as last Cur Pointer)
+111+  812E              ; ----------------------------------------------------------------------------------------
+112+  812E              PRINTCHAR:
+113+  812E 06 08        			LD B,8						; 8 Lines per char
+114+  8130 2A 65 81                 LD HL, (SCR_CUR_PTR)		; Load Cursor Pointer y,x
+115+  8133
+116+  8133 1A           BYTEPCHAR:	LD A,(DE)					; Get Char to be printed, first line
+117+  8134 77           			LD (HL),A					; Move to Printing location
+118+  8135 24                       INC H						; inc H so next line in char (ZX Spectrum Screen RAM)
+119+  8136 13                       INC DE 						; next line to be printed
+120+  8137 10 FA                    DJNZ BYTEPCHAR				; Repeat 8 lines
+121+  8139 3A 69 81                 LD A,(PRINT_ATTR) 			; Load Attributes to print char with
+122+  813C 2A 67 81                 LD HL, (SCR_ATTR_PTR)
+123+  813F 77                       LD (HL),A
+124+  8140 21 67 81                 LD HL, SCR_ATTR_PTR			; Get pointer to ATTR
+125+  8143 34                       INC (HL)					; Move Attribute cursor to next char
+126+  8144 21 65 81     			LD HL, SCR_CUR_PTR
+127+  8147 34           			INC (HL)					; update Cursor pointer to next position
+128+  8148 C9                       RET
+129+  8149              ; ----------------------------------------------------------------------------------------
+130+  8149
+131+  8149
+132+  8149
+133+  8149              ; ----------------------------------------------------------------------------------------
+134+  8149              ; INK2PAPER - moves ink of attribute stored in (PRINT_ATTR) to paper and sets ink to 0
+135+  8149              ; 				Sets bright 1 and flash 0
+136+  8149              ; ----------------------------------------------------------------------------------------
+137+  8149 3A 69 81     INK2PAPER:	LD A, (PRINT_ATTR)		    ; Get storedAttribute
+138+  814C E6 07                    AND 7						; get Attr INK in A
+139+  814E 07           			RLCA
+140+  814F 07           			RLCA
+141+  8150 07           			RLCA						; move Ink to Paper
+142+  8151 F6 40        			OR 64						; ink 0 bright 1
+143+  8153 32 69 81     			LD (PRINT_ATTR),A		    ; Get storedAttribute
+144+  8156 C9           			RET
+145+  8157              ; ----------------------------------------------------------------------------------------
+146+  8157
+147+  8157
+148+  8157
+149+  8157
+150+  8157 21 00 40     CLEARSCR:	LD HL,$4000					; Erases screen by writing 0 to all pixels and attributes
+151+  815A 11 01 40     			LD DE,$4001
+152+  815D 01 FF 1A     			LD BC,6911
+153+  8160 36 00        			LD (HL),0
+154+  8162 ED B0        			LDIR
+155+  8164 C9           			RET
+156+  8165
+157+  8165
+158+  8165              SCR_CUR_PTR
+158+  8165 00 00          	db $00, $00				; Cursor Pointer in Screen (2 bytes) (HL)
+159+  8167 00 00        SCR_ATTR_PTR: 	db $00, $00				; Attr Pointer in Screen (2 bytes) (HL)
+160+  8169 00           PRINT_ATTR:		db $00					; Attribute used by printchar routine (1 byte)
+161+  816A
+162+  816A              CHARSET: incbin "charset.bin"			; Charset used
+163+  846A
+# file closed: C:\Users\diego\Documents\asignaturas\AOC\Conecta4\printat.asm
+# file closed: C:\Users\diego\Documents\asignaturas\AOC\Conecta4\L31.2 - Bienvenida Conecta 4.asm
