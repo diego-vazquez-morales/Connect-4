@@ -1,0 +1,3 @@
+*.asm linguist-language=Assembly
+*.sld linguist-generated
+*.lst linguist-generated

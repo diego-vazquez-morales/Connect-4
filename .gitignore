@@ -1,0 +1,6 @@
+# Salida del ensamblador (sjasmplus)
+*.bin
+*.lst
+*.sld
+!charset.bin
+.tmp/

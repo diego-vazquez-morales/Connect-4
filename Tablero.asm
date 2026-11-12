@@ -257,7 +257,7 @@ TurnoAmarillo:
         SRL A           ; Dividimos entre 4
         INC A           ; +1 para obtener columna (1-7)
         ; Cargamos en columna la columna que es
-        LD columna, (A)
+        LD (columna), A
         
 
         ; ...

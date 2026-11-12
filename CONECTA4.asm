@@ -1,6 +1,6 @@
 ;-----------------------------------------------------------------------
-;NOMBRE: Arkanoi.asm
-;DESCRIPCION: Rutina que contiene la lógica principal del juego Arkanoid, 
+;NOMBRE: CONECTA4.asm
+;DESCRIPCION: Rutina que contiene la lógica principal del juego Conecta 4, 
 ;              incluyendo la pantalla de inicio, la gestión de entradas 
 ;              del usuario y el flujo del juego.
 ;ENTRADA: Ninguna
